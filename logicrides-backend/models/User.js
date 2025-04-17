@@ -25,8 +25,7 @@ const UserSchema  = new Schema ({
         type: String,
         required: [true, 'Phone number is required']
     },
-    timestamps: true
-});
+},{timestamps: true});
 
 // todo: add a presave hook to hash the password before saving
 

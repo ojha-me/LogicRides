@@ -5,7 +5,8 @@ require("dotenv").config();
 const express =  require("express");
 const mongoose = require("mongoose");
 
-const apiRoutes = require("./routes/api");
+const apiRoutes = require("./routes/api/index");
+const usersRoutes = require("./routes/api/users");
 
 // create an app ( the express application instance)
 const app = express();
@@ -40,11 +41,15 @@ const connectDB = async () => {
 
 connectDB();
 
+// middleware
+app.use(express.json()); // parses the requests with json payload
+
 // mount the api routes
 // app.use("path", router)
 // any requests starting with /api will be handled by apiRoutes
 // For any request whose path starts with /api, pass the request handling over to the apiRoutes router.
 app.use("/api", apiRoutes);
+app.use("/api/users", usersRoutes);
 
 app.get('/', (req, res) => {
     res.send('Hello World! LogicRides Backend is Running!'); // Updated message
