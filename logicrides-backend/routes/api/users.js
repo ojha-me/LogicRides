@@ -1,5 +1,6 @@
 const express = require("express");
 const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
 
 const router = express.Router();
 // import user model
@@ -49,6 +50,82 @@ router.post("/register", async (req, res) => {
         }
         res.status(500).send('Server error during registration');
     }
+})
+
+
+// @route   POST api/users/login
+// @desc    Authenticate user & get token (Login)
+// @access  Public
+router.post("/login", async (req, res)=> {
+    const { email, password } = req.body;
+  
+    if (!email || !password) {
+        return res.status(400).json({
+            errors: [{
+                message: "Email or password missing"
+            }]
+        })
+    }
+
+    try {
+        /**
+         * Mongoose schemas, by default, exclude the password field when converting to JSON 
+         * (like in the register response),but the findOne query does retrieve it from the 
+         * database for comparison purposes
+         */
+        const user = await User.findOne({
+            email: email.toLowerCase()
+        })
+
+        if (!user) {
+           return res.status(400).json({
+                errors: [{
+                    message: "This user doesn't exist."
+                }]
+            })
+        }
+        // bcrypt compares plain password to stored hash securely
+        const isMatch = await bcrypt.compare(password, user.password)
+
+        if (!isMatch) {
+            return res.status(400).json({
+                errors: [{
+                    message: "Worng password"
+                }]
+            })
+        }
+
+        // if the password matches, we create a JWT token and store that in the users browser
+        const payload = {
+            id: user.id,
+            email: user.email
+        };
+        const jwtSecret = process.env.JWT_SECRET;
+        const options = {
+            expiresIn: '1h'
+        }
+
+        // create the jwt token
+        // jwt.sign(payload,secret,options,callback)
+        jwt.sign(
+        payload,
+        jwtSecret,
+        options,
+        (err, token) =>{
+            if (err) {
+                throw err;
+            }
+            res.status(200).json({
+                message: "Login Successful",
+                token: token
+            })
+        })
+    }
+    catch (error) {
+        console.error("Something went wrong while logging in", error.message);
+        res.status(500).send("Server error during login")
+    }
+        
 })
 
 module.exports = router;
