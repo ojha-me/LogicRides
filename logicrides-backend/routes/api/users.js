@@ -4,7 +4,8 @@ const jwt = require("jsonwebtoken");
 
 const router = express.Router();
 // import user model
-const User =require("../../models/User")
+const User =require("../../models/User");
+const authMiddleware = require("../../middleware/auth");
 
 // @route   POST api/users/register
 // @desc    Register a new user
@@ -127,5 +128,70 @@ router.post("/login", async (req, res)=> {
     }
         
 })
+
+// @route   GET api/users/profile
+// @desc    Get current user's profile
+// @access  Private (requires token)
+router.get("/profile", authMiddleware, async (req, res) => {
+    try {
+        const fullUser = await User.findById(req.user.id).select('-password');
+        if (!fullUser) {
+            return res.status(404).json({
+                msg: 'User not found' 
+            });
+        }
+        res.json(fullUser);
+    }
+    catch (err) {
+        console.error("Couldnt find profile for the user", err.message)
+        res.status(500).json({
+            status: 500,
+            message: "Server error. Couldn't find profile",
+        });
+    }
+});
+
+
+// @route   GET api/users/profile
+// @desc    Get current user's profile
+// @access  Private (requires token)
+router.put('/profile', authMiddleware, async (req, res) => {
+    const { name, phone } = req.body
+
+    // create profileFields object to update
+    const profileFields = {};
+    if (name) profileFields.name = name;
+    if (phone) profileFields.phone = phone;
+ if (Object.keys(profileFields).length === 0) {
+     return res.status(400).json({ message: "No fields to update" });
+ }
+
+    try {
+        const user = await User.findByIdAndUpdate(
+            req.user.id,
+            {
+                $set: profileFields
+            },
+            { new: true, runValidators: true }
+        ).select('-password')
+        
+        if (!user) {
+            return res.status(404).json({ msg: 'User not found' });
+        }
+
+        res.json({ msg: 'Profile updated successfully', user });
+
+    }
+    catch (err) {
+        console.error('Update Profile Error:', err.message);
+         // Handle potential validation errors during update
+        if (err.name === 'ValidationError') {
+             const messages = Object.values(err.errors).map(val => val.message);
+             return res.status(400).json({ errors: messages });
+        }
+        res.status(500).send('Server Error');
+    }
+})
+
 
 module.exports = router;
