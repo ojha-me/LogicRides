@@ -7,6 +7,7 @@ const mongoose = require("mongoose");
 
 const apiRoutes = require("./routes/api/index");
 const usersRoutes = require("./routes/api/users");
+const carRoutes = require("./routes/api/cars");
 
 // create an app ( the express application instance)
 const app = express();
@@ -50,6 +51,8 @@ app.use(express.json()); // parses the requests with json payload
 // For any request whose path starts with /api, pass the request handling over to the apiRoutes router.
 app.use("/api", apiRoutes);
 app.use("/api/users", usersRoutes);
+app.use('/api/cars', carRoutes);
+
 
 app.get('/', (req, res) => {
     res.send('Hello World! LogicRides Backend is Running!'); // Updated message
